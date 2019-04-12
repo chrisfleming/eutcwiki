@@ -1,0 +1,76 @@
+version: '3.5'
+services:
+  reverse-proxy:
+    networks:
+      - mediawiki
+  #To use the mail-relay with your mediawiki, you must add the following section to your
+  #LocalSettings.php, removing the #'s of course:
+  #$wgSMTP = array(
+  #'host'     => "mail-relay", // could also be an IP address. Where the SMTP server is located
+  #'IDHost'   => "yourdomain.com",      // Generally this will be the domain name of your website (aka mywiki.org)
+  #'port'     => 25,                 // Port to use when connecting to the SMTP server
+  #'auth'     => false,               // Should we use SMTP authentication (true or false)
+  #'username' => "",     // Username to use for SMTP authentication (if being used)
+  #'password' => ""       // Password to use for SMTP authentication (if being used)
+  #);
+  #mail-relay:
+  #  networks:
+  #    - mediawiki
+  mediawiki:
+    image: mediawiki:stable
+    container_name: mediawiki
+    environment:
+      - MEDIAWIKI_DB_NAME=mediawiki
+      - MEDIAWIKI_DB_USER=${MEDIAWIKI_DB_USERNAME:-mediawiki}
+      - MEDIAWIKI_DB_PASSWORD=${MEDIAWIKI_DB_PASSWORD}
+      - MEDIAWIKI_DB_HOST=mediawiki-db
+      - MEDIAWIKI_SECRET_KEY=${MEDIAWIKI_SECRET_KEY}
+      - MEDIAWIKI_EMAIL=${MEDIAWIKI_EMAIL}
+      - MEDIAWIKI_DB_TYPE=mysql
+    volumes:
+      - /docker/mediawiki/images:/var/www/html/images
+      - ./eutcwiki/LocalSettings.php:/var/www/html/LocalSettings.php
+    labels:
+      - traefik.enable=true
+      - traefik.port=80
+      - "traefik.frontend.rule=Host:wiki.eutc.org.uk,wiki.friendsofbedlam.co.uk"
+      - traefik.docker.network=mediawiki
+#      - com.centurylinklabs.watchtower.enable=true
+    networks:
+      - mediawiki
+    restart: unless-stopped
+    depends_on:
+      - mediawiki-db
+#    healthcheck:
+#      test: ["CMD-SHELL", "curl -f http://mediawiki || exit 1"]
+#      interval: 1m30s
+#      timeout: 10s
+#      retries: 5
+#      start_period: 30s
+
+  mediawiki-db:
+    image: mariadb:latest
+    container_name: mediawiki-db
+    environment:
+      - MYSQL_DATABASE=mediawiki
+      - MYSQL_USER=${MEDIAWIKI_DB_USERNAME:-mediawiki}
+      - MYSQL_PASSWORD=${MEDIAWIKI_DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MEDIAWIKI_DB_ROOT_PASSWORD:?Please copy template.env to .env and provide provide a value for MEDIAWIKI_DB_ROOT_PASSWORD}
+    volumes:
+      # - "mediawiki-database:/var/lib/mysql"
+      - /docker/mediawiki/images:/var/lib/mysql
+    labels:
+      - "traefik.enable=false"
+      #- "com.centurylinklabs.watchtower.enable=true"
+    restart: unless-stopped
+    networks:
+      - mediawiki
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin -u $$MYSQL_USER --password=$$MYSQL_PASSWORD ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+
+networks:
+  mediawiki:
