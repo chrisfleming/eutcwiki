@@ -3,16 +3,6 @@ services:
   reverse-proxy:
     networks:
       - mediawiki
-  #To use the mail-relay with your mediawiki, you must add the following section to your
-  #LocalSettings.php, removing the #'s of course:
-  #$wgSMTP = array(
-  #'host'     => "mail-relay", // could also be an IP address. Where the SMTP server is located
-  #'IDHost'   => "yourdomain.com",      // Generally this will be the domain name of your website (aka mywiki.org)
-  #'port'     => 25,                 // Port to use when connecting to the SMTP server
-  #'auth'     => false,               // Should we use SMTP authentication (true or false)
-  #'username' => "",     // Username to use for SMTP authentication (if being used)
-  #'password' => ""       // Password to use for SMTP authentication (if being used)
-  #);
   #mail-relay:
   #  networks:
   #    - mediawiki
